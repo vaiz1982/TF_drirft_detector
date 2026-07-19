@@ -25,29 +25,28 @@ type Reader interface {
 var allowedStateRoot = getAllowedStateRoot()
 
 func getAllowedStateRoot() string {
-	if v := os.Getenv("DRIFTCTL_STATE_ROOT"); v != "" {
-		return v
-	}
-	// Default to current working directory when unset — safe for local/dev use,
-	// should be overridden via env var in any networked/API deployment.
-	wd, err := os.Getwd()
-	if err != nil {
-		return "."
-	}
-	return wd
+        return os.Getenv("DRIFTCTL_STATE_ROOT")
 }
 
 
 
 func safeStatePath(root, requested string) (string, error) {
-	full := filepath.Join(root, requested)
-	cleanRoot := filepath.Clean(root)
-	cleanFull := filepath.Clean(full)
-	if cleanFull != cleanRoot && !strings.HasPrefix(cleanFull, cleanRoot+string(filepath.Separator)) {
-		return "", fmt.Errorf("invalid state path: %q escapes allowed root", requested)
-	}
-	return cleanFull, nil
+        if root == "" {
+                return requested, nil
+        }
+        var cleanFull string
+        if filepath.IsAbs(requested) {
+                cleanFull = filepath.Clean(requested)
+        } else {
+                cleanFull = filepath.Clean(filepath.Join(root, requested))
+        }
+        cleanRoot := filepath.Clean(root)
+        if cleanFull != cleanRoot && !strings.HasPrefix(cleanFull, cleanRoot+string(filepath.Separator)) {
+                return "", fmt.Errorf("invalid state path: %q escapes allowed root", requested)
+        }
+        return cleanFull, nil
 }
+
 
 
 

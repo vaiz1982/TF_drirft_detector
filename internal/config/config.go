@@ -3,6 +3,8 @@ package config
 import (
 	"fmt"
 	"os"
+      	"strings"
+
 
 	"gopkg.in/yaml.v3"
 
@@ -24,6 +26,10 @@ type APIConfig struct {
 
 // Load reads configuration from a YAML file.
 func Load(path string) (*File, error) {
+        if strings.Contains(path, "..") {
+		return nil, fmt.Errorf("invalid config path: must not contain '..'")
+	}
+
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("read config: %w", err)
