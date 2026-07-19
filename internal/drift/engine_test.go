@@ -61,3 +61,85 @@ func TestEngineCompareMissingInCloud(t *testing.T) {
 		t.Fatalf("expected critical severity, got %s", findings[0].Severity)
 	}
 }
+
+
+
+
+
+
+func TestEngineCompareSecurityGroupAttributeIsCritical(t *testing.T) {
+	engine := NewEngine(model.CompareConfig{})
+	expected := []model.Resource{
+		{
+			ID: "aws/aws_security_group/sg-123", Provider: "aws", Type: "aws_security_group",
+			CloudID: "sg-123", Name: "web-sg",
+			Attributes: map[string]any{"ingress": "22/tcp from 10.0.0.0/8"},
+			Tags:       map[string]string{"env": "dev"},
+		},
+	}
+	actual := []model.Resource{
+		{
+			ID: "aws/aws_security_group/sg-123", Provider: "aws", Type: "aws_security_group",
+			CloudID: "sg-123", Name: "web-sg",
+			Attributes: map[string]any{"ingress": "22/tcp from 0.0.0.0/0"},
+			Tags:       map[string]string{"env": "dev"},
+		},
+	}
+	findings := engine.Compare(expected, actual)
+	found := false
+	for _, f := range findings {
+		if f.Kind == model.DriftAttributeChange && f.Field == "ingress" {
+			found = true
+			if f.Severity != model.SeverityCritical {
+				t.Fatalf("expected critical severity for security group ingress drift, got %s", f.Severity)
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("expected an ingress attribute finding, got none")
+	}
+}
+
+
+
+
+
+func TestEngineCompareInstanceAttributeStaysWarning(t *testing.T) {
+	engine := NewEngine(model.CompareConfig{})
+	expected := []model.Resource{
+		{
+			ID: "aws/aws_instance/i-999", Provider: "aws", Type: "aws_instance",
+			CloudID: "i-999", Name: "worker",
+			Attributes: map[string]any{"instance_type": "t3.micro"},
+			Tags:       map[string]string{"env": "dev"},
+		},
+	}
+	actual := []model.Resource{
+		{
+			ID: "aws/aws_instance/i-999", Provider: "aws", Type: "aws_instance",
+			CloudID: "i-999", Name: "worker",
+			Attributes: map[string]any{"instance_type": "t3.small"},
+			Tags:       map[string]string{"env": "dev"},
+		},
+	}
+	findings := engine.Compare(expected, actual)
+	found := false
+	for _, f := range findings {
+		if f.Kind == model.DriftAttributeChange && f.Field == "instance_type" {
+			found = true
+			if f.Severity != model.SeverityWarning {
+				t.Fatalf("expected warning severity for plain instance_type drift, got %s", f.Severity)
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("expected an instance_type attribute finding, got none")
+	}
+}
+
+
+
+
+
+
+
