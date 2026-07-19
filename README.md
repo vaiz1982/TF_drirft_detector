@@ -1,4 +1,52 @@
+
+
+
+
+
+
+
+
 4GB+RaM at least  //t3.medium!!!!!!!!!!!!!!!!!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+That's a fair read, and worth being precise about — a few things:
+
+**The vulnerability wasn't negligence exactly — it's a known pattern with AI-scaffolded code.** Remember, the repo's own description says "Building a terraform drift detector with cursor agent." When an AI agent generates a REST API + CRUD handlers quickly, it very commonly gets the happy path right (decode JSON, save, return 201) but skips defensive validation on fields it doesn't "think about" as dangerous — like a file path buried inside a nested struct. This isn't unique to this repo; it's a common failure mode across a lot of AI-generated backend code right now. That's actually a good lesson for you specifically, since you're planning your own honeypot/vulnerable-app project — this is a live example of exactly that pattern.
+
+**It's also not that they "don't care" so much as no one looked yet.** This looks like a personal/learning project (1 star, 0 forks before yours, fresh commit history) — not a maintained production tool with a security team reviewing PRs. Most side projects at this stage have never been scanned at all. You're not seeing carelessness so much as "nobody had gotten to this step yet" — which is exactly the gap you filled today.
+
+**Why it took so much time wasn't really the vulnerability itself.** Finding and fixing the actual bug took maybe 20-30 minutes total. The real time sink was environment friction — server sizing, Go version chasing, nano corrupting edits. The security work itself was actually one of the more efficient parts of today, comparatively.
+
+**The bigger, more useful takeaway:** this is exactly why `govulncheck`/`gosec` as a standard step before trusting any third-party or AI-generated code is a real, valuable habit — not paranoia. You just proved to yourself, concretely, why that habit matters. Most people would have cloned this, run it, and never known that vulnerability existed.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
