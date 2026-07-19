@@ -283,6 +283,9 @@ func Run(ctx context.Context, addr string, handler http.Handler) error {
 		Handler:           handler,
 		ReadHeaderTimeout: 10 * time.Second,
 	}
+	// #nosec G118 -- ctx is already cancelled by the time this goroutine's
+	// shutdown logic runs; a fresh background context is required to give
+	// Shutdown its own timeout budget independent of the cancelled ctx.
 	go func() {
 		<-ctx.Done()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

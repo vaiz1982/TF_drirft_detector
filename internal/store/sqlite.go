@@ -25,7 +25,7 @@ func OpenSQLite(path string) (*SQLiteStore, error) {
 	}
 	s := &SQLiteStore{db: db}
 	if err := s.migrate(); err != nil {
-		db.Close()
+		_ = db.Close() // best-effort cleanup; migration error takes priority
 		return nil, err
 	}
 	return s, nil
