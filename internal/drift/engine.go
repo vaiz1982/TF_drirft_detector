@@ -39,10 +39,8 @@ func (e *Engine) Compare(expected, actual []model.Resource) []model.DriftFinding
 	for _, r := range actual {
 		actualIndex[r.ID] = r
 	}
-
 	expectedIndex := make(map[string]model.Resource, len(expected))
 	var findings []model.DriftFinding
-
 	for _, exp := range expected {
 		expectedIndex[exp.ID] = exp
 		act, ok := actualIndex[exp.ID]
@@ -59,15 +57,18 @@ func (e *Engine) Compare(expected, actual []model.Resource) []model.DriftFinding
 		findings = append(findings, e.diffAttributes(exp, act)...)
 		findings = append(findings, e.diffTags(exp, act)...)
 	}
-
 	for _, act := range actual {
 		if _, ok := expectedIndex[act.ID]; !ok {
+			sev := model.SeverityWarning
+			if isSecuritySensitiveType(act.Type) {
+				sev = model.SeverityCritical
+			}
 			findings = append(findings, model.DriftFinding{
 				Kind:         model.DriftExtraInCloud,
 				ResourceID:   act.ID,
 				ResourceType: act.Type,
 				ResourceName: act.Name,
-				Severity:     model.SeverityWarning,
+				Severity:     sev,
 			})
 		}
 	}
@@ -84,7 +85,6 @@ func (e *Engine) diffAttributes(exp, act model.Resource) []model.DriftFinding {
 	for k := range act.Attributes {
 		allKeys[k] = true
 	}
-
 	for key := range allKeys {
 		if e.IgnoreAttributes[key] {
 			continue
@@ -155,6 +155,10 @@ func (e *Engine) diffTags(exp, act model.Resource) []model.DriftFinding {
 			continue
 		}
 		if ev != av {
+			sev := model.SeverityInfo
+			if key == "env" {
+				sev = model.SeverityWarning
+			}
 			findings = append(findings, model.DriftFinding{
 				Kind:         model.DriftTagsChanged,
 				ResourceID:   exp.ID,
@@ -163,7 +167,7 @@ func (e *Engine) diffTags(exp, act model.Resource) []model.DriftFinding {
 				Field:        fmt.Sprintf("tags.%s", key),
 				Expected:     ev,
 				Actual:       av,
-				Severity:     model.SeverityInfo,
+				Severity:     sev,
 			})
 		}
 	}
