@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/driftctl/driftctl/internal/model"
@@ -15,6 +16,43 @@ import (
 type Reader interface {
 	Read(ctx context.Context, cfg model.StateConfig) ([]byte, error)
 }
+
+
+
+// allowedStateRoot is the directory under which all local state files must
+// live. Prevents path traversal (e.g. "../../etc/passwd") from an
+// API-supplied workspace path escaping into arbitrary filesystem reads.
+var allowedStateRoot = getAllowedStateRoot()
+
+func getAllowedStateRoot() string {
+	if v := os.Getenv("DRIFTCTL_STATE_ROOT"); v != "" {
+		return v
+	}
+	// Default to current working directory when unset — safe for local/dev use,
+	// should be overridden via env var in any networked/API deployment.
+	wd, err := os.Getwd()
+	if err != nil {
+		return "."
+	}
+	return wd
+}
+
+
+
+func safeStatePath(root, requested string) (string, error) {
+	full := filepath.Join(root, requested)
+	cleanRoot := filepath.Clean(root)
+	cleanFull := filepath.Clean(full)
+	if cleanFull != cleanRoot && !strings.HasPrefix(cleanFull, cleanRoot+string(filepath.Separator)) {
+		return "", fmt.Errorf("invalid state path: %q escapes allowed root", requested)
+	}
+	return cleanFull, nil
+}
+
+
+
+
+
 
 // DefaultReader supports local files, HTTP(S), and S3 backends.
 type DefaultReader struct{}
@@ -41,16 +79,26 @@ func (r *DefaultReader) Read(ctx context.Context, cfg model.StateConfig) ([]byte
 	}
 }
 
+
+
 func readLocal(path string) ([]byte, error) {
 	if path == "" {
 		return nil, fmt.Errorf("state path is required for local backend")
 	}
-	data, err := os.ReadFile(path)
+	safePath, err := safeStatePath(allowedStateRoot, path)
 	if err != nil {
-		return nil, fmt.Errorf("read state file %s: %w", path, err)
+		return nil, err
+	}
+	data, err := os.ReadFile(safePath)
+	if err != nil {
+		return nil, fmt.Errorf("read state file %s: %w", safePath, err)
 	}
 	return data, nil
 }
+
+
+
+
 
 func readHTTP(ctx context.Context, url string) ([]byte, error) {
 	if url == "" {
