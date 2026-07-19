@@ -1,4 +1,4 @@
-4GB+RaM at least  
+4GB+RaM at least  //t3.medium!!!!!!!!!!!!!!!!!
 
 
 
@@ -10,7 +10,7 @@ go build ./...                    # fast now, cache is warm
 
 
 - to grab the lates Go from go.dev not from apt!!!!!!!!!!!
-- 
+
 
 
 
