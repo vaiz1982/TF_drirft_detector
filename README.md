@@ -1,3 +1,24 @@
+4GB+RaM at least  
+
+
+
+cd ~/TF_drirft_detector
+git pull                          # get any new changes if you edited elsewhere
+go build ./...                    # fast now, cache is warm
+./bin/driftctl scan --state ~/tf-test/terraform.tfstate --provider aws --region us-east-1
+
+
+
+- to grab the lates Go from go.dev not from apt!!!!!!!!!!!
+- 
+
+
+
+
+
+
+
+
 # Driftctl — Terraform Drift Detection
 
 Driftctl continuously compares Terraform state files against live cloud infrastructure to detect configuration drift — without running `terraform plan` or `terraform apply`.
